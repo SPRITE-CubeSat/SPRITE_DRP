@@ -1,7 +1,7 @@
 import argparse
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Flux and wavelength calibration using a standard star")
+    parser = argparse.ArgumentParser(description="Flux calibration using a standard star")
 
     # Required arguments
     parser.add_argument(
