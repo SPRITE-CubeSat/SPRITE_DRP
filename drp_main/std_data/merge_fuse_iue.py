@@ -64,13 +64,13 @@ if __name__ == "__main__":
         fits.ColDefs([
             fits.Column(
                 name="WAVE",
-                format='I', #8-bit Integer = "B",
+                format='I', #16-bit Integer = "I",
                 unit="Angstrom",
                 array = merge_wav
             ),
             fits.Column(
                 name="FLUX",
-                format='I', #16-bit Integer = "I",
+                format='D', #16-bit Integer = "I",
                 unit="erg/cm^2/s/Angstrom",
                 array = merge_spec
             )
