@@ -30,7 +30,7 @@ Output:
 
 
 ## Demo File, Input and Output Folders
-The "demo.ipynb" file is a notebook demonstrating how to run this code using N132D input data as an example.
+The "demo.ipynb" file is a notebook demonstrating how to run this code using input data for N132D, N49, and TwHyA as examples. (Two SNR, one Calibration Star example)
 
 All necessary input files for the demonstration code are provided in the "sim_input" folder.
 
