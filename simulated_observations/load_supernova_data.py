@@ -113,7 +113,7 @@ def load_iue_and_fuse_spec(fuse_file, iue_file):
 
     iue_bins,  iue_avg_flux,  iue_flux_sum = bin_flux_and_wave_data(1, iue_waves, iue_flux)
 
-    # Scale IUE data to better match FUSE data
+    # Scale IUE data to better match FUSE SNR data
     iue_flux_sum *= 6
     
     ###########################

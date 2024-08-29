@@ -3,7 +3,7 @@
 ###############
 
 # path to files
-file_path = "/Users/elenacarlson/PycharmProjects/SNR_files/files/"
+file_path = "/Users/elenacarlson/PycharmProjects/SNR_files/data_and_code/"
 
 # path to save figures
 fig_path = "/Users/elenacarlson/Desktop/"

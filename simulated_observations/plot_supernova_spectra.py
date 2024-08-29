@@ -25,7 +25,7 @@ global max_x_ang, min_x_ang, fig_path, exposure_time
 #####################
 # Plot 1D spectrum  #
 #####################
-def plot_1d_spectrum(waves, photons, target_name):
+def plot_1d_spectrum(waves, photons, total_counts_per_sec, target_name):
     """
     Plot wavelength vs photon count
     (1D plot)
@@ -40,6 +40,9 @@ def plot_1d_spectrum(waves, photons, target_name):
 
     target_name: string
         specifies name of SN remnant target
+
+    total_counts_per_sec: int
+        total photon counts per second
 
     Returns
     -------
@@ -69,18 +72,15 @@ def plot_1d_spectrum(waves, photons, target_name):
     # Axes labels
     ax.set_xlabel(r"Wavelength ($\mathring{A}$)", fontsize=30)
     ax.set_ylabel("Photons (counts)", fontsize=30)
-    ax.set_title(f"Simulated 1D Spectrum for LMC {target_name[:-3]}", fontsize=30)
-    #ax.set_title(f"LMC {target_name[:-3]}", fontsize=30)
+    ax.set_title(f"Simulated 1D Spectrum for {target_name}", fontsize=30)
     ax.tick_params(axis='both', which='major', labelsize=24)
     ax.set_xlim(lower_bound, upper_bound)
-    ax.set_ylim(0, 400)
 
-    # vertical lines
-    plt.vlines(1190, 0, 400, linestyle="dashed", color="#440357")
-    plt.vlines(1210, 0, 400, linestyle="dashed", color="#440357")
-
-    plt.vlines(1390, 0, 400, linestyle="dashed", color="#440357")
-    plt.vlines(1410, 0, 400, linestyle="dashed", color="#440357")
+    # Determine if data is for a star
+    if total_counts_per_sec >= 400:
+        ax.set_ylim(0, 1100)
+    else:
+        ax.set_ylim(0, 400)
 
     # Save figure to file
     plt.savefig(fig_path + f"Wavelength_VS_Photons_{target_name}.png", bbox_inches="tight")
@@ -124,9 +124,8 @@ def plot_noisy_2d_spec(spec_2d_with_background, num, target_name):
                        extent=[min_x_ang, max_x_ang, 23, -23], cmap="viridis", vmin=0, vmax=20, aspect="auto")
 
     # Title and axes
-    ax.set_title(f"Simulated 2D Spectrum for LMC {target_name[:-3]} "
+    ax.set_title(f"Simulated 2D Spectrum for {target_name} "
                  f"(t = {(exposure_time / 1000):.0f}ks)\nProfile #{num}", fontsize=30)
-    #ax.set_title(f"LMC {target_name[:-3]} (Profile #{num})", fontsize=30)
     ax.set_xlabel(r'Wavelength ($\mathring{A}$)', fontsize=30)
     ax.set_ylabel('Arc-minutes', fontsize=30)
 

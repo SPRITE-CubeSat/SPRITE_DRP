@@ -31,7 +31,7 @@ global row_pixels, col_pixels, dark_rate, ang_range, exposure_time
 ##################
 # Add shot noise #
 ##################
-def generate_noisy_image(convolved_2d_spec, slit_data, profile):
+def generate_noisy_image(convolved_2d_spec, slit_data):
     
     """
     Takes the convolved 2D spectrum and adds random shot noise
@@ -46,9 +46,6 @@ def generate_noisy_image(convolved_2d_spec, slit_data, profile):
     slit_data: 2D numpy array
         slit data file with 760 rows and 1380 cols
         detector data
-
-    profile: string
-        Name of brightness profile file
 
     Returns
     -------
@@ -73,7 +70,7 @@ def generate_noisy_image(convolved_2d_spec, slit_data, profile):
     noisy_2d_spectrum = convolved_2d_spec
      
     # Generate 2D spectrum with background noise
-    spec_2d_with_background = add_background(noisy_2d_spectrum, slit_data, profile)
+    spec_2d_with_background = add_background(noisy_2d_spectrum, slit_data)
     
     return spec_2d_with_background
 
@@ -127,7 +124,7 @@ def gen_dark_bg(noisy_2d_spectrum):
 ###############################
 # add geo-coronal lyA emission #
 ###############################
-def gen_lyman_bg(slit_data, profile):
+def gen_lyman_bg(slit_data):
     
     """
     Adds geo-coronal lyman alpha emission
@@ -138,9 +135,6 @@ def gen_lyman_bg(slit_data, profile):
     slit_data: 2D numpy array
         slit data file with 760 rows and 1380 cols
         of detector data
-
-    profile: string
-        Name of brightness profile file
 
     Returns
     -------
@@ -213,7 +207,7 @@ def gen_lyman_bg(slit_data, profile):
 ##############################
 # combine background sources #
 ##############################
-def add_background(noisy_2d_spectrum, slit_data, profile):
+def add_background(noisy_2d_spectrum, slit_data):
     """
     Combine background sources onto one spectrum
 
@@ -226,9 +220,6 @@ def add_background(noisy_2d_spectrum, slit_data, profile):
     slit_data: 2D numpy array
         slit data file with 760 rows and 1380 cols
         of detector data
-
-    profile: string
-        Name of brightness profile file
 
     Returns
     -------
@@ -243,7 +234,7 @@ def add_background(noisy_2d_spectrum, slit_data, profile):
     #############################
     
     dark_bg = gen_dark_bg(noisy_2d_spectrum)
-    lyman_bg = gen_lyman_bg(slit_data, profile)
+    lyman_bg = gen_lyman_bg(slit_data)
     
     # Add each spectrum together
     spec_with_background = dark_bg + lyman_bg

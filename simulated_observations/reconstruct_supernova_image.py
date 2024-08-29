@@ -94,6 +94,7 @@ def stack_slit_data_to_reconstruct_supernova_image(brightness_arrays):
     # combine profile arrays # 
     ##########################
 
+    # If we called in brightness profiles
     # Vertically combine profiles to form one 2D array
     combined_array = np.vstack(brightness_arrays)
 

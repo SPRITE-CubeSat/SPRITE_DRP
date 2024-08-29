@@ -74,36 +74,52 @@ def get_all_supernova_data(slit_file, fuse_file, iue_file, eff_area_file, profil
     # (1380 pixels in length)
     photon_per_pix = interp_waves_to_pixels(waves, photons)
 
-    # Generate a plot for each brightness profile (each SPRITE slit step)
-    for num in range(number):
-        
-        profile = profile_name + f"_{num + 1}.dat"
-        
-        # Open a specific brightness profile, get data into arrays
-        electron_per_sec, x_coord = load_brightness_profile(profile)
+# If no brightness profile (or a calibration star)
+    if profile_name is None:
 
         # Convolve 1D SNR photon data onto 2D SPRITE slit
-        spec_2d, total_counts_per_sec, brightness = (
-            convolve_data(photon_per_pix, slit_data, False, electron_per_sec, x_coord))
-
-        # Plot the 1D spectrum for the first profile only
-        if num == 0:
-            plot_1d_spectrum(waves, photons, target_name)
+        spec_2d, total_counts_per_sec, brightness = convolve_data(photon_per_pix, slit_data, False, None, None)
 
         # Generate 2D spectrum with shot noise and background
-        spec_2d_with_background = generate_noisy_image(spec_2d, slit_data, profile)
-        
+        spec_2d_with_background = generate_noisy_image(spec_2d, slit_data)
+
+        # Plot 1D simulated spec
+        plot_1d_spectrum(waves, photons, total_counts_per_sec, target_name)
+
         # Plot noisy 2D spectrum
-        plot_noisy_2d_spec(spec_2d_with_background, num, target_name)
-    
-        # Make 1D brightness profiles 2D (40 x 760 pixels)
-        interpolated_counts_2d = convert_brightness_profile_to_2d_array(electron_per_sec)
-        
-        # Append profiles to a list
-        brightness_arrays.append(interpolated_counts_2d)
+        plot_noisy_2d_spec(spec_2d_with_background, number, target_name)
 
-    # Stack brightness profiles together and create image
-    flipped_array = stack_slit_data_to_reconstruct_supernova_image(brightness_arrays)
+# If SNR with brightness profiles
+    else:
+        for num in range(number):
 
-    # Plot reconstructed image
-    plot_reconstructed_images(flipped_array, target_name)
+            profile = profile_name + f"_{num + 1}.dat"
+
+            # Open a specific brightness profile, get data into arrays
+            electron_per_sec, x_coord = load_brightness_profile(profile)
+
+            # Convolve 1D SNR photon data onto 2D SPRITE slit
+            spec_2d, total_counts_per_sec, brightness = (
+                convolve_data(photon_per_pix, slit_data, False, electron_per_sec, x_coord))
+
+            # Plot the 1D spectrum for the first profile only
+            if num == 0:
+                plot_1d_spectrum(waves, photons, total_counts_per_sec, target_name)
+
+            # Generate 2D spectrum with shot noise and background
+            spec_2d_with_background = generate_noisy_image(spec_2d, slit_data)
+
+            # Plot noisy 2D spectrum
+            plot_noisy_2d_spec(spec_2d_with_background, num, target_name)
+
+            # Make 1D brightness profiles 2D (40 x 760 pixels)
+            interpolated_counts_2d = convert_brightness_profile_to_2d_array(electron_per_sec)
+
+            # Append profiles to a list
+            brightness_arrays.append(interpolated_counts_2d)
+
+        # Stack brightness profiles together and create image
+        flipped_array = stack_slit_data_to_reconstruct_supernova_image(brightness_arrays)
+
+        # Plot reconstructed image
+        plot_reconstructed_images(flipped_array, target_name)

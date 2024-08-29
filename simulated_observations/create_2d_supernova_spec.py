@@ -304,26 +304,17 @@ def convolve_data(photon_per_pix, slit_data, noise=False, e_per_s=None, original
     #############
     elif total_counts_per_sec > 400:
 
-        # Dim or brighten star randomly
-        brightness = (np.random.randint(1, 200)) / 100
+        # Do not change star brightness
+        brightness = 1
         photon_per_pix = np.array(photon_per_pix) * brightness
-
-        # Choose a random y-position to place a star
-        star_y_location = np.random.randint(30, row_pixels - 30)
 
         # Create a gaussian around star with point-source function 
         # Assume 14 arcsecond point source
         star_gaussian = gaussian(row_pixels, pix_std_dev)
 
-        # Calculate the shift needed to center the Gaussian at random y-position
-        star_shift = star_y_location - row_pixels // 2
-
-        # Shift the Gaussian window
-        shifted_gauss = np.roll(star_gaussian, star_shift)
-
         # Apply shifted star gaussian to each column of data in slit
         for col in range(40):
-            slit_mask[:, col] *= shifted_gauss
+            slit_mask[:, col] *= star_gaussian
 
     ############
     # SNR DATA #
