@@ -64,7 +64,7 @@ if __name__ == "__main__":
         fits.ColDefs([
             fits.Column(
                 name="WAVE",
-                format='I', #16-bit Integer = "I",
+                format='D', #16-bit Integer = "I",
                 unit="Angstrom",
                 array = merge_wav
             ),
