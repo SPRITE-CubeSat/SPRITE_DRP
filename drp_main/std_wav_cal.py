@@ -87,12 +87,12 @@ def parse_arguments():
     parser.add_argument(
         "--med_filt_width",
         type=int,
-        default=0.2,
+        default=0.25,
         help="Width of median filter, as fraction of array size, for subtracting slowly varying continuum"
     )
     parser.add_argument(
         "--rel_peak_thresh",
-        type=int,
+        type=float,
         default=0.003,
         help="Threshold in terms of relative counts/flux to use a peak in cross-correlation (Default: 0.003)"
     )
@@ -138,10 +138,10 @@ def get_wavelength(x, params):
     return params[1] * x_rel**2 + params[2] * x_rel + params[3]
 
 
-def get_correlation_score(obs_spec_norm, known_spec_norm, rel_threhsold=0.003, display=False):
+def get_correlation_score(obs_spec_norm, known_spec_norm, rel_threshold, display=False):
     """Calculate correlation of two normalized spectra after thresholding"""
-    obs_mask = obs_spec_norm >= rel_threhsold
-    known_mask = known_spec_norm >= rel_threhsold
+    obs_mask = obs_spec_norm >= rel_threshold
+    known_mask = known_spec_norm >= rel_threshold
     corr_res = np.corrcoef(obs_mask, known_mask)[0, 1]
 
     
@@ -175,7 +175,7 @@ def get_median_filter_width(data, fraction):
     return width
 
 # Example objective function
-def objective_function(params, x_observed, counts_observed, wav_known, flux_known):
+def objective_function(params, x_observed, counts_observed, wav_known, flux_known, rel_thresh):
     """Objective function for wavelenght solution fitting: negative correlation with known spec"""
     # 1. Get the wavelength solution using the current parameters
     wav_sol = get_wavelength(x_observed, params)
@@ -184,13 +184,13 @@ def objective_function(params, x_observed, counts_observed, wav_known, flux_know
     interp_flux = np.interp(wav_sol, wav_known, flux_known)  # Interpolation
     
     # 3. Compute the correlation score
-    xcor = get_correlation_score(counts_observed, interp_flux)
+    xcor = get_correlation_score(counts_observed, interp_flux, rel_threshold=rel_thresh)
 
     # Since most optimizers minimize functions, we return the negative of the correlation score
     return -xcor
 
 # Optimize the parameters using differential_evolution
-def optimize_wavelength_solution_de(x_observed, counts_observed, wav_known, flux_known, param_bounds):
+def optimize_wavelength_solution_de(x_observed, counts_observed, wav_known, flux_known, param_bounds, rel_thresh=0.003):
     """
     Optimizes the wavelength solution parameters using differential evolution.
     
@@ -206,7 +206,7 @@ def optimize_wavelength_solution_de(x_observed, counts_observed, wav_known, flux
     """
     # Use scipy.optimize.differential_evolution to optimize the params
     result = differential_evolution(objective_function, bounds=param_bounds, 
-                                    args=(x_observed, counts_observed, wav_known, flux_known))
+                                    args=(x_observed, counts_observed, wav_known, flux_known, rel_thresh))
     
     return result
 
@@ -224,11 +224,10 @@ if __name__ == "__main__":
     sprite_resel_Angstrom = 1.3 
     known_wav = known_spec1d['WAVE']
     sprite_resel_px = sprite_resel_Angstrom / (known_wav[1] - known_wav[0])
-    known_spec1d_smooth = gaussian_filter(known_spec1d['FLUX'], sprite_resel_px / 2.355)
+    known_spec1d_smooth = gaussian_filter(known_spec1d['FLUX'], 5 * sprite_resel_px / 2.355)
     
     # Subtract background (median fitler) and then normalize the spectrum
-    known_spec1d_bg =  medfilt(known_spec1d_smooth,
-                               get_median_filter_width(known_spec1d_smooth, args.med_filt_width))
+    known_spec1d_bg =  medfilt(known_spec1d_smooth, 7001)# get_median_filter_width(known_spec1d_smooth, args.med_filt_width))
     known_spec1d_bgsub = known_spec1d_smooth - known_spec1d_bg
     known_spec1d_norm = known_spec1d_bgsub / np.max(known_spec1d_bgsub)
 
@@ -239,8 +238,7 @@ if __name__ == "__main__":
     obs_spec1d = np.sum(obs_spec2d[ymin:ymax, :], axis=0)
 
     # Filter the spectrum
-    obs_spec1d_bg = medfilt(obs_spec1d,
-                            get_median_filter_width(obs_spec1d, args.med_filt_width))
+    obs_spec1d_bg = medfilt(obs_spec1d, 401)# get_median_filter_width(obs_spec1d, args.med_filt_width))
     obs_spec1d_bgsub = obs_spec1d - obs_spec1d_bg
     obs_spec1d_norm = obs_spec1d_bgsub / np.max(obs_spec1d_bgsub)
 
@@ -248,8 +246,8 @@ if __name__ == "__main__":
     param_bounds = [
         # Reference x-pixel at which center of dispersion lies
         (
-            len(xaxis)/2.0 - 20 if args.x_center_min is None else args.x_center_min,
-            len(xaxis)/2.0 + 20 if args.x_center_min is None else args.x_center_max
+            len(xaxis)/2.0 - 30 if args.x_center_min is None else args.x_center_min,
+            len(xaxis)/2.0 + 30 if args.x_center_min is None else args.x_center_max
         ),
         # Coefficient of x2 term in the wavelength solution
         (
@@ -269,7 +267,7 @@ if __name__ == "__main__":
     ]
   
     # Run optimization
-    result = optimize_wavelength_solution_de(xaxis, obs_spec1d_norm, known_wav, known_spec1d_norm, param_bounds)
+    result = optimize_wavelength_solution_de(xaxis, obs_spec1d_norm, known_wav, known_spec1d_norm, param_bounds, rel_thresh=args.rel_peak_thresh)
 
     # Optimized parameters
     optimized_params = result.x
@@ -286,17 +284,32 @@ if __name__ == "__main__":
     xref, c2, c1, c0 = optimized_params
     print("wav(x) = {0:.2f} + {1:.2E} * (x - {2:.2f})^2 + {3:.2f} * (x - {2:.2f})".format(c0, c2, xref, c1))
 
+
     # Plot the result
-    fig, axes = plt.subplots(2, 1, figsize=(8, 8))
-    axes[0].pcolor(obs_spec2d, vmax=10 * np.mean(obs_spec2d))
-    axes[0].plot([0, obs_spec2d.shape[1]], [ymin, ymin],  'k--')
-    axes[0].plot([0, obs_spec2d.shape[1]], [ymax, ymax],  'k--')
-    axes[0].set_ylim([ymin - 100, ymax + 100])
-    axes[1].plot(known_wav, known_spec1d_smooth * np.max(obs_spec1d) / np.max(known_spec1d_smooth), 'k.-', label="Known IUE/FUSE Spectrum")
-    axes[1].set_yscale("log")
-    axes[1].plot(optimized_wav, obs_spec1d, 'r-', label="Wavelength Solution")
-    axes[1].legend()
-    axes[1].set_ylim([1, np.max(obs_spec1d)])
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    axes[0, 0].pcolor(obs_spec2d, vmax=10 * np.mean(obs_spec2d))
+    axes[0, 0].plot([0, obs_spec2d.shape[1]], [ymin, ymin],  'k--')
+    axes[0, 0].plot([0, obs_spec2d.shape[1]], [ymax, ymax],  'k--')
+    axes[0, 0].set_ylim([ymin - 100, ymax + 100])
+    axes[1, 0].plot(known_wav, known_spec1d_smooth * np.max(obs_spec1d) / np.max(known_spec1d_smooth), 'k.-', label="Known IUE/FUSE Spectrum")
+    axes[1, 0].set_yscale("log")
+    axes[1, 0].plot(optimized_wav, obs_spec1d, 'r-', label="Wavelength Solution")
+    axes[1, 0].legend()
+    axes[1, 0].set_ylim([1, np.max(obs_spec1d)])
+    axes[1, 0].plot(optimized_wav, obs_spec1d_bg, 'r:')
+    axes[1, 0].plot(known_wav, known_spec1d_bg * np.max(obs_spec1d) / np.max(known_spec1d_smooth), 'k:')
+    axes[0, 1].plot(known_wav, known_spec1d_norm, 'k.-', label="Normalized/filtered Known Spec")
+    axes[0, 1].plot([known_wav[0], known_wav[-1]], [args.rel_peak_thresh]*2, 'r--')
+    axes[0, 1].fill_between(known_wav, np.zeros_like(known_wav), known_spec1d_norm > args.rel_peak_thresh, alpha=0.25)
+    axes[1, 1].plot(optimized_wav, obs_spec1d_norm, 'k.-', label="Normalized/filtered Observed Spec")
+    axes[1, 1].plot([optimized_wav[0], optimized_wav[-1]], [args.rel_peak_thresh]*2, 'r--')
+    axes[1, 1].fill_between(optimized_wav, np.zeros_like(optimized_wav), obs_spec1d_norm > args.rel_peak_thresh, alpha=0.25)
+    axes[1, 1].sharex(axes[0, 1])
+    for ax in axes[:, 1]:
+        #ax.set_xlim([900, 2000])
+        ax.legend()
+        ax.set_yscale("log")
+        ax.set_ylim([args.rel_peak_thresh / 2.0, 1])
     fig.tight_layout()
     fig.show()
     input("")
