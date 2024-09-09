@@ -227,7 +227,7 @@ if __name__ == "__main__":
     known_spec1d_smooth = gaussian_filter(known_spec1d['FLUX'], 5 * sprite_resel_px / 2.355)
     
     # Subtract background (median fitler) and then normalize the spectrum
-    known_spec1d_bg =  medfilt(known_spec1d_smooth, 7001)# get_median_filter_width(known_spec1d_smooth, args.med_filt_width))
+    known_spec1d_bg =  medfilt(known_spec1d_smooth, 401)# get_median_filter_width(known_spec1d_smooth, args.med_filt_width))
     known_spec1d_bgsub = known_spec1d_smooth - known_spec1d_bg
     known_spec1d_norm = known_spec1d_bgsub / np.max(known_spec1d_bgsub)
 
@@ -285,31 +285,61 @@ if __name__ == "__main__":
     print("wav(x) = {0:.2f} + {1:.2E} * (x - {2:.2f})^2 + {3:.2f} * (x - {2:.2f})".format(c0, c2, xref, c1))
 
 
+    known_spec1d_opt = interp1d(known_wav, known_spec1d_smooth)(optimized_wav)
+    inv_sens_curve0 = known_spec1d_opt / obs_spec1d
+    inv_sens_curve0_med = medfilt(inv_sens_curve0, 101)
+
+    obs_spec1d_fcal = obs_spec1d * inv_sens_curve0_med
+
     # Plot the result
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    fig, axes = plt.subplots(2, 3, figsize=(13, 8))
     axes[0, 0].pcolor(obs_spec2d, vmax=10 * np.mean(obs_spec2d))
     axes[0, 0].plot([0, obs_spec2d.shape[1]], [ymin, ymin],  'k--')
     axes[0, 0].plot([0, obs_spec2d.shape[1]], [ymax, ymax],  'k--')
     axes[0, 0].set_ylim([ymin - 100, ymax + 100])
-    axes[1, 0].plot(known_wav, known_spec1d_smooth * np.max(obs_spec1d) / np.max(known_spec1d_smooth), 'k.-', label="Known IUE/FUSE Spectrum")
-    axes[1, 0].set_yscale("log")
-    axes[1, 0].plot(optimized_wav, obs_spec1d, 'r-', label="Wavelength Solution")
-    axes[1, 0].legend()
-    axes[1, 0].set_ylim([1, np.max(obs_spec1d)])
-    axes[1, 0].plot(optimized_wav, obs_spec1d_bg, 'r:')
-    axes[1, 0].plot(known_wav, known_spec1d_bg * np.max(obs_spec1d) / np.max(known_spec1d_smooth), 'k:')
-    axes[0, 1].plot(known_wav, known_spec1d_norm, 'k.-', label="Normalized/filtered Known Spec")
+    axes[0, 0].set_title("Extracting 1D Spectrum")
+
+    axes[1, 0].set_title("Wave Calibrated Comparison")
+    axes[1, 0].plot(optimized_wav, known_spec1d_opt, 'k.-', label="IUE/FUSE Spectrum")
+    axes[1, 0].plot(known_wav, known_spec1d_bg, 'k:', label="Med. Filter")
+    axes_10_twinx = axes[1, 0].twinx()
+    axes_10_twinx.plot(optimized_wav, obs_spec1d, 'r-', label="Observed Spectrum")
+    axes_10_twinx.plot(optimized_wav, obs_spec1d_bg, 'r:', label="Med. Filter")
+    axes[1, 0].set_xlim([optimized_wav[0], optimized_wav[-1]])
+    axes[1, 0].set_ylabel(r"$\mathrm{F_{\lambda}}$ [erg/s/cm$^2$/$\mathrm{\AA}$]")
+    axes[1, 0].legend(loc=1)
+    axes_10_twinx.legend(loc=4)
+    for i, ax in enumerate([axes[1, 0], axes_10_twinx]): 
+        ax.set_yscale("log")
+
+    axes[0, 1].set_title("Normalized & filtered Known Spec")
+    axes[0, 1].plot(known_wav, known_spec1d_norm, 'k.-', label="Processed spec")
     axes[0, 1].plot([known_wav[0], known_wav[-1]], [args.rel_peak_thresh]*2, 'r--')
-    axes[0, 1].fill_between(known_wav, np.zeros_like(known_wav), known_spec1d_norm > args.rel_peak_thresh, alpha=0.25)
-    axes[1, 1].plot(optimized_wav, obs_spec1d_norm, 'k.-', label="Normalized/filtered Observed Spec")
-    axes[1, 1].plot([optimized_wav[0], optimized_wav[-1]], [args.rel_peak_thresh]*2, 'r--')
-    axes[1, 1].fill_between(optimized_wav, np.zeros_like(optimized_wav), obs_spec1d_norm > args.rel_peak_thresh, alpha=0.25)
-    axes[1, 1].sharex(axes[0, 1])
-    for ax in axes[:, 1]:
-        #ax.set_xlim([900, 2000])
+    axes[0, 1].fill_between(known_wav, np.zeros_like(known_wav), known_spec1d_norm > args.rel_peak_thresh, alpha=0.25, label="Peaks")
+
+    axes[0, 2].set_title("Normalized & filtered Observed Spec")
+    axes[0, 2].plot(optimized_wav, obs_spec1d_norm, 'k.-', label="Processed spec")
+    axes[0, 2].plot([optimized_wav[0], optimized_wav[-1]], [args.rel_peak_thresh]*2, 'r--')
+    axes[0, 2].fill_between(optimized_wav, np.zeros_like(optimized_wav), obs_spec1d_norm > args.rel_peak_thresh, alpha=0.25, label="Peaks")
+    axes[0, 2].sharex(axes[0, 1])
+    for ax in axes[0, 1:]:
+        ax.set_xlim([optimized_wav[0], optimized_wav[-1]])
         ax.legend()
         ax.set_yscale("log")
         ax.set_ylim([args.rel_peak_thresh / 2.0, 1])
+
+    axes[1, 1].plot(optimized_wav, np.log10(inv_sens_curve0), 'x')
+    axes[1, 1].plot(optimized_wav, np.log10(inv_sens_curve0_med), 'r-')
+    axes[1, 1].set_title("Inverse Sensitivity Curve")
+    axes[1, 1].set_ylabel(r"(erg/s/cm$^2$/$\mathrm{\AA}$) /  (count)")
+
+    axes[1, 2].plot(optimized_wav, known_spec1d_opt, 'kx', label="Known (IUE/FUSE)")
+    axes[1, 2].plot(optimized_wav, obs_spec1d_fcal, 'r-', label="Calibrated Observation")
+    axes[1, 2].legend(loc=1)
+    axes[1, 2].set_yscale("log")
+    axes[1, 2].set_title("Flux / Wave Calibrated Spectrum")
+    axes[1, 2].set_ylim([5e-15, 5e-12])
+    axes[1, 2].set_ylabel(r"$\mathrm{F_{\lambda}}$ [erg/s/cm$^2$/$\mathrm{\AA}$]")
     fig.tight_layout()
     fig.show()
     input("")

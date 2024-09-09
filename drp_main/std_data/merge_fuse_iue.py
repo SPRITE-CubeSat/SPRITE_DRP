@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     # Create full wav axis with 
     merge_dlam = fuse_wav[1] - fuse_wav[0]
-    merge_wav = np.arange(fuse_wav[0], iue_wav[-1], step=merge_dlam)
+    merge_wav = np.arange(fuse_wav[0], iue_wav[-1], step=0.5)
     iue_indices = merge_wav >= iue_wav[0]
     fuse_indices = merge_wav <= fuse_wav[-1]
     overlap_indices = (iue_indices & fuse_indices)
