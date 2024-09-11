@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib import colors
 from scipy.optimize import curve_fit, differential_evolution
 from scipy.interpolate import interp1d
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, binary_closing
 from scipy.signal import medfilt, find_peaks
 from scipy.optimize import minimize
 
@@ -96,6 +96,12 @@ def parse_arguments():
         default=0.003,
         help="Threshold in terms of relative counts/flux to use a peak in cross-correlation (Default: 0.003)"
     )
+    parser.add_argument(
+        "--out_file",
+        type=str,
+        default="<INPUT>_wavcal.fits",
+        help="Name of the output file to save the wavelength calibration to."
+    )
     return parser.parse_args()
 
 
@@ -137,12 +143,19 @@ def get_wavelength(x, params):
     x_rel = x - params[0]
     return params[1] * x_rel**2 + params[2] * x_rel + params[3]
 
+def get_pseudospec(spec, thresh_abs):
+    """Get a pseudo spectrum where 1 = above threshold and -1 = below negative threshold."""
+    pseudo = np.zeros_like(spec)
+    pseudo[spec >= thresh_abs] = 1
+    pseudo[spec <= -thresh_abs] = -1
+    return pseudo
 
 def get_correlation_score(obs_spec_norm, known_spec_norm, rel_threshold, display=False):
     """Calculate correlation of two normalized spectra after thresholding"""
-    obs_mask = obs_spec_norm >= rel_threshold
-    known_mask = known_spec_norm >= rel_threshold
-    corr_res = np.corrcoef(obs_mask, known_mask)[0, 1]
+
+    obs_pseudo = get_pseudospec(obs_spec_norm, rel_threshold)
+    known_pseudo = get_pseudospec(known_spec_norm, rel_threshold)
+    corr_res = np.corrcoef(obs_pseudo, known_pseudo)[0, 1]
 
     
     if display:
@@ -284,12 +297,42 @@ if __name__ == "__main__":
     xref, c2, c1, c0 = optimized_params
     print("wav(x) = {0:.2f} + {1:.2E} * (x - {2:.2f})^2 + {3:.2f} * (x - {2:.2f})".format(c0, c2, xref, c1))
 
-
+    # Calculate a heavily filtered inverse sensitivy curve
     known_spec1d_opt = interp1d(known_wav, known_spec1d_smooth)(optimized_wav)
-    inv_sens_curve0 = known_spec1d_opt / obs_spec1d
-    inv_sens_curve0_med = medfilt(inv_sens_curve0, 101)
+    inv_sens_curve = known_spec1d_opt / obs_spec1d
+    inv_sens_curve_med = medfilt(inv_sens_curve, 101)
 
-    obs_spec1d_fcal = obs_spec1d * inv_sens_curve0_med
+    # Calculate a sensitivity corrected observed spectrum
+    obs_spec1d_fcal = obs_spec1d * inv_sens_curve_med
+
+    # Create columns
+    axis1_col = fits.Column(
+        name="X",
+        format='I',  
+        unit="pixel",
+        array=xaxis
+    )
+    axis2_col = fits.Column(
+        name="WAVE",
+        format='D', 
+        unit="Angstrom",
+        array=np.zeros(2048)
+    )
+    axis3_col = fits.Column(
+        name="INV_SENS",
+        format='D',  
+        unit="erg/cm^2/s/Angstrom/count",
+        array=inv_sens_curve_med
+    )
+    cols = fits.ColDefs([axis1_col, axis2_col, axis3_col])
+
+    # Create primary HDU and table HDU
+    wavcal_fits = fits.HDUList([fits.PrimaryHDU(), fits.BinTableHDU.from_columns(cols)])
+    file_out = args.out_file
+    if file_out == "<INPUT>_wavcal.fits":
+        file_out = file_out.replace("<INPUT>", args.observed_2d_spectrum.replace(".fits", ""))
+    wavcal_fits.writeto(file_out, overwrite=True, checksum=True)
+    print(f"Saved wavelength solution to {file_out}")
 
     # Plot the result
     fig, axes = plt.subplots(2, 3, figsize=(13, 8))
@@ -312,24 +355,31 @@ if __name__ == "__main__":
     for i, ax in enumerate([axes[1, 0], axes_10_twinx]): 
         ax.set_yscale("log")
 
+    kn_peaks = (known_spec1d_norm > args.rel_peak_thresh).astype(int)
+    kn_troughs = (known_spec1d_norm < -args.rel_peak_thresh).astype(int)
     axes[0, 1].set_title("Normalized & filtered Known Spec")
     axes[0, 1].plot(known_wav, known_spec1d_norm, 'k.-', label="Processed spec")
     axes[0, 1].plot([known_wav[0], known_wav[-1]], [args.rel_peak_thresh]*2, 'r--')
-    axes[0, 1].fill_between(known_wav, np.zeros_like(known_wav), known_spec1d_norm > args.rel_peak_thresh, alpha=0.25, label="Peaks")
+    axes[0, 1].fill_between(known_wav, np.zeros_like(known_wav), kn_peaks, alpha=0.25, label="Peaks")
+    axes[0, 1].fill_between(known_wav, -kn_troughs, np.zeros_like(known_wav), alpha=0.25, label="Troughs")
 
+    ob_peaks = (obs_spec1d_norm > args.rel_peak_thresh).astype(int)
+    ob_troughs = (obs_spec1d_norm < -args.rel_peak_thresh).astype(int)
     axes[0, 2].set_title("Normalized & filtered Observed Spec")
     axes[0, 2].plot(optimized_wav, obs_spec1d_norm, 'k.-', label="Processed spec")
     axes[0, 2].plot([optimized_wav[0], optimized_wav[-1]], [args.rel_peak_thresh]*2, 'r--')
-    axes[0, 2].fill_between(optimized_wav, np.zeros_like(optimized_wav), obs_spec1d_norm > args.rel_peak_thresh, alpha=0.25, label="Peaks")
+    axes[0, 2].fill_between(optimized_wav, np.zeros_like(optimized_wav), ob_peaks, alpha=0.25, label="Peaks")
+    axes[0, 2].fill_between(optimized_wav, -ob_troughs, np.zeros_like(optimized_wav), alpha=0.25, label="Troughs")
     axes[0, 2].sharex(axes[0, 1])
+    axes[0, 2].sharey(axes[0, 1])
     for ax in axes[0, 1:]:
         ax.set_xlim([optimized_wav[0], optimized_wav[-1]])
         ax.legend()
-        ax.set_yscale("log")
-        ax.set_ylim([args.rel_peak_thresh / 2.0, 1])
+        #ax.set_yscale("log")
+        #ax.set_ylim([args.rel_peak_thresh / 2.0, 1])
 
-    axes[1, 1].plot(optimized_wav, np.log10(inv_sens_curve0), 'x')
-    axes[1, 1].plot(optimized_wav, np.log10(inv_sens_curve0_med), 'r-')
+    axes[1, 1].plot(optimized_wav, np.log10(inv_sens_curve), 'x')
+    axes[1, 1].plot(optimized_wav, np.log10(inv_sens_curve_med), 'r-')
     axes[1, 1].set_title("Inverse Sensitivity Curve")
     axes[1, 1].set_ylabel(r"(erg/s/cm$^2$/$\mathrm{\AA}$) /  (count)")
 
