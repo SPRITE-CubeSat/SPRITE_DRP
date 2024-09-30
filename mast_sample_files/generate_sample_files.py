@@ -1,3 +1,8 @@
+"""This file generates sample data structures for aniticpated SPRITE files, compliat with MAST data requirements.
+
+See the confluence page on SPRITE data products for more info.
+https://confluence.lasp.colorado.edu/pages/viewpage.action?pageId=161866390
+"""
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import Table
