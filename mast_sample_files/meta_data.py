@@ -4,10 +4,10 @@ from astropy.time import Time
 
 def get_mast_filename(mission='sprite', setting='accum', target_name='m81',
                       obs_sequence=1, obs_number=1, wave='fuv', filetype='spec2d.fits',
-                      version='1'):
+                      version='1.0'):
     """Return a MAST compliant filename based on various parameters"""
     target_string = f"{target_name}-s{obs_sequence:02d}-n{obs_number:05d}"
-    return f"mccm_{mission}_{setting}_{target_string}_{wave}_{version}_{filetype}"
+    return f"mccm_{mission}_{setting}_{target_string}_{wave}_v{version}_{filetype}"
 
 
 # Parameters for the mock data
@@ -124,7 +124,7 @@ sprite_housekeeping_dict = {
     "SPRITEID": (1, "Unique SPRITE observation ID"),
     "STD_ID": (0, "ObsID of Standard Star to use for this file"),
     "ERR_CODE": ("", "SPRITE Flight-side Error Codes"),
-    "DAT_TYPE": ("SPEC2D", "SPRITE Data Type"),
+    "DAT_TYPE": ("SPEC1D", "SPRITE Data Type"),
     "OBS_MODE": ("", "SPRITE Observing Mode"),
     "HV_T_AVG": (0.0, "High-voltage avg temp (degrees celsius)"),
     "HV_T_VAR": (0.0, "High-voltafe temp var (degrees celsius)"),
@@ -140,5 +140,5 @@ sprite_housekeeping_dict = {
     "AR_Y_MAX": (0, "Active region upper limit in y (pix)"),
     "PH_MIN": (0, "Minimum pulse height value (adu)"),
     "PH_MAX": (256, "Max pulse height value (adu)"),
-    "PIPE_VER": (0.0, "SPRITE Pipeline Version used."),
+    "PIPE_VER": ("v0.0", "SPRITE Pipeline Version used."),
 }

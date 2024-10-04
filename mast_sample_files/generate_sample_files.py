@@ -203,20 +203,20 @@ spec1d_filename = meta_data.get_mast_filename(setting='accum', filetype='spec1d.
 # Create columns
 axis1_col = fits.Column(
     name="WAVE",
-    format='I',  # 8-bit Integer = "B",
+    format='D',  # 8-bit Integer = "B",
     unit="Angstrom",
     array=np.linspace(900, 1900, 2048)
 )
 axis2_col = fits.Column(
     name="FLUX",
-    format='I',  # 16-bit Integer = "I",
-    unit="erg/cm^2/s/Angstrom",
+    format='D',  # 16-bit Integer = "I",
+    unit="erg cm-2 s-1 Angstrom-1",
     array=np.zeros(2048)
 )
 axis3_col = fits.Column(
     name="FLUX_ERR",
-    format='I',  # 16-bit Integer = "I",
-    unit="erg/cm^2/s/Angstrom",
+    format='D',  # 16-bit Integer = "I",
+    unit="erg cm-2 s-1 Angstrom-1",
     array=np.zeros(2048)
 )
 cols = fits.ColDefs([axis1_col, axis2_col, axis3_col])
@@ -236,6 +236,8 @@ for dict_ in dicts_to_include:
             primary_hdu.header[key] = val
 
 # Create and write the FITS file
+primary_hdu.header["EXTNAME"] = "Primary"
+spec1d_hdu.header["EXTNAME"] = "SCI"
 spec1d_fits = fits.HDUList([primary_hdu, spec1d_hdu])
 spec1d_fits.writeto(generated_dir + spec1d_filename, overwrite=True, checksum=True)
 print(f"Saved SPRITE_DRP/sample_data/generated/{spec1d_filename}")
@@ -271,9 +273,9 @@ spec2d_err_hdu.header["EXTNAME"] = "ERR"
 
 # Add brightness units
 spec2d_hdu.header["OBS_MODE"] = "ACCUM"
-spec2d_hdu.header["BUNIT"] = "erg/s/cm^2/arcsec^2/Angstrom"
+spec2d_hdu.header["BUNIT"] = "erg cm-2 arcsec-2 Angstrom-1"
 spec2d_err_hdu.header["OBS_MODE"] = "ACCUM"
-spec2d_err_hdu.header["BUNIT"] = "erg/s/cm^2/arcsec^2/Angstrom"
+spec2d_err_hdu.header["BUNIT"] = "erg cm-2 arcsec-2 Angstrom-1"
 
 # Create and write the FITS file
 spec2d_fits = fits.HDUList([primary_hdu, spec2d_hdu, spec2d_err_hdu])
