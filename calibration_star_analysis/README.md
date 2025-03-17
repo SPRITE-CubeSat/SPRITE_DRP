@@ -11,10 +11,10 @@ Below are two ways to call the functions:
 
 1) One data file:
   import sys
-  sys.path.extend(["*** PATH TO YOUR CODE ****"])
+  sys.path.extend(["PATH TO YOUR CODE"])
   from call_all_calib_funcs import call_functions_one_database, call_functions_two_database
   exposure_time = [100, 1000]
-  file_path = "*** PATH TO YOUR DATA FILES ***"
+  file_path = "PATH TO YOUR DATA FILES"
   file_iue = file_path  + "IUE_HD60753.fits"
   call_functions_one_database(file_iue, exposure_time, "IUE")
 
@@ -22,10 +22,10 @@ Below are two ways to call the functions:
 2) Two data files:
  
   import sys
-  sys.path.extend(["*** PATH TO YOUR CODE ****"])
+  sys.path.extend(["PATH TO YOUR CODE"])
   from call_all_calib_funcs import call_functions_one_database, call_functions_two_database
   exposure_time = [100, 1000]
-  file_path = "*** PATH TO YOUR DATA FILES ***"
+  file_path = "PATH TO YOUR DATA FILES"
   file_fuse = file_path  + "GD246_FUSE.fits"
   file_iue = file_path  + "GD246_IUE.fits"
   call_functions_two_database(file_fuse, file_iue, exposure_time)
