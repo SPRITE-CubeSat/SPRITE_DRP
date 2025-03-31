@@ -1,9 +1,8 @@
-This set of functions inputs either one or two FUV spectral data files and produces plots of signal-to-noise ratio per wavelength, 
-photon count per pixel, photon count per wavelength, and flux per wavelength.
+This set of functions inputs either one or two far or intermediate UV spectral data files and produces plots of signal-to-noise ratio per wavelength, 
+photon count per pixel, photon count per wavelength, and flux per wavelength for SPRITE wavelengths at two specified exposure times.
 
 Inputs include single files (must be spectral data from HST, IUE, FUSE, TUES, or  HUT) as well as two files (must be spectral data from FUSE and IUE).  Data should
-be for a standard star or some other calibration target point source.  Other input files include effective area curve data, SCC effective 
-area curve data.
+be for a standard star or some other calibration target point source.  Other input files include effective area curve data and SCC effective area curve data.
 
 Before using this code, please make sure to change the file path in the calibration_config file.
 
