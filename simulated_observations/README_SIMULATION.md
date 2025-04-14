@@ -28,6 +28,8 @@ Output:
 
 7. "sprite_sim_config.py" - configuration file to change variables like directory path, exposure time, detector size, dark rate, and more.
 
+8. "call_all_supernova_func.py" - function to call all of the above functions.
+
 
 ## Demo File, Input and Output Folders
 The "demo.ipynb" file is a notebook demonstrating how to run this code using input data for N132D, N49, and TwHyA as examples. (Two SNR, one Calibration Star example)
