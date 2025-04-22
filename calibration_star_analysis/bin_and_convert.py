@@ -13,7 +13,7 @@ c = c.value
 
 # Local Imports
 from calibration_config import *
-global row_pixels, col_pixels, min_x_ang, max_x_ang, ang_range
+global col_pixels, min_x_ang, max_x_ang, ang_range
 
 
 ####################
