@@ -23,7 +23,7 @@ Before using this code, please make sure to change the file path in the calibrat
 "calibration_config.py" : configuration file to change variables like directory path, file path, dark rate, and more.
 "get_star_data.py" :  functions to read spectral data files as well effective area data. Calls binning function.
 "bin_and_convert.py" : functions to bin wavelength and flux data (2 Angstrom resolution) and convert from flux to photons.
-"noise_and_calculations.py" : function to calculate signal-to-noise ratio across SPRITE wavelengths
+"noise_and_calculations.py" : function to calculate signal-to-noise ratio across SPRITE wavelengths.
 "visualize_data.py" : functions to plot analyzed data.
 "call_all_calib_funcs.py" : function to call all of the above functions.
 
