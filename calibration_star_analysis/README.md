@@ -29,30 +29,8 @@ Before using this code, please make sure to change the file path in the calibrat
 
 ## Demo File, Input and Output Folders
 
-The "demo.ipynb" file is a notebook demonstrating how to run this code using input data for N132D, N49, and TwHyA as examples. (Two SNR, one Calibration Star example)
+The "demo.ipynb" file is a notebook demonstrating how to run this code using input data for HD 49798 and GD 246 as examples.  Calibration Star HD 49798 requires one data file (TUES) while GD 246 requires two data files (FUSE and IUE). 
 
 All necessary input files for the demonstration code are provided in the "sim_input" folder.
 
-An example of simulated 2D spectral data for calibration star TwHyA is in the "sim_output" folder.
-
-
-1) One data file:
-  import sys
-  sys.path.extend(["PATH TO YOUR CODE"])
-  from call_all_calib_funcs import call_functions_one_database, call_functions_two_database
-  exposure_time = [100, 1000]
-  file_path = "PATH TO YOUR DATA FILES"
-  file_iue = file_path  + "IUE_HD60753.fits"
-  call_functions_one_database(file_iue, exposure_time, "IUE")
-
-
-2) Two data files:
- 
-  import sys
-  sys.path.extend(["PATH TO YOUR CODE"])
-  from call_all_calib_funcs import call_functions_one_database, call_functions_two_database
-  exposure_time = [100, 1000]
-  file_path = "PATH TO YOUR DATA FILES"
-  file_fuse = file_path  + "GD246_FUSE.fits"
-  file_iue = file_path  + "GD246_IUE.fits"
-  call_functions_two_database(file_fuse, file_iue, exposure_time)
+The "sim_output" folder constains the "demo.ipynb" file, which showcases code and generated plots, as well as examples of analyzed spectral data for HD 49798 and GD 246 in .csv format.
