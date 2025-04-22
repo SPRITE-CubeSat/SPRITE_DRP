@@ -3,18 +3,11 @@
 ###########
 
 # Local imports
-from calibration_config import *
-global row_pixels, col_pixels, min_x_ang, max_x_ang, ang_range, noise
+from calibration_config import noise
+global noise
 
 # Third-party Imports
 import numpy as np
-import astropy.units as u
-from astropy.constants import h, c
-
-# Physics constants
-h = (h.value * u.joule * u.s).to(u.erg * u.s).value
-c = c.value
-
 
 ######################
 # noise calculations #
